@@ -11,7 +11,10 @@ namespace Infrastructure.Patients
     {
         public void Configure(EntityTypeBuilder<Patient> builder)
         {
+            // Primary Key - postgres will automatically get B-tree index postgres
             builder.HasKey(p => p.Id);
+
+            builder.HasIndex(p => p.BirthDate);
 
             builder.Property(p => p.NameUse)
                 .HasMaxLength(50);
