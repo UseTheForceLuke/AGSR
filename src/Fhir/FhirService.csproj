@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<!--contact as nuget if necessary-->
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\SharedKernel\SharedKernel.csproj" />
+	</ItemGroup>
+
+</Project>

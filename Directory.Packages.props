@@ -2,12 +2,11 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-  <!--.NET 9 packages. Most of them will work on .NET 8. If you need to, make the updates here individually.-->
   <ItemGroup>
     <!-- Static code analysis -->
     <PackageVersion Include="Bogus" Version="35.6.3" />
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="6.8.2.4717" />
+	<PackageVersion Include="SonarAnalyzer.CSharp" Version="6.8.2.4717" />
     <!-- Application -->
     <PackageVersion Include="Scrutor" Version="6.0.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.8.1" />
