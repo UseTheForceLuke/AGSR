@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
+    <PackageReference Include="EFCore.NamingConventions" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+	<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Application\Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<InternalsVisibleTo Include="ArchitectureTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Database\Migrations\" />
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
+</Project>
