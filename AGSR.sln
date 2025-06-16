@@ -30,7 +30,7 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirService", "src\Fhir\FhirService.csproj", "{C2A56AC1-92FE-80A4-F5AA-CB131CB80164}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirPatientSeeder", "src\FhirSeederCLI\FhirPatientSeeder.csproj", "{25B297ED-B8D7-EF03-EE99-E318201A8C9D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirSeederCLI", "src\FhirSeederCLI\FhirSeederCLI.csproj", "{25B297ED-B8D7-EF03-EE99-E318201A8C9D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FhirServiceTests", "tests\FhirTests\FhirServiceTests.csproj", "{1EF5BB2C-DCBE-BE38-A398-AE3478FBE107}"
 EndProject

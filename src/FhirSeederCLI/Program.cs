@@ -10,14 +10,17 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Linq;
 using System.Collections;
+using System.Text.RegularExpressions;
 
-namespace FhirPatientSeeder
+namespace FhirSeederCLI
 {
     class Program
     {
         private const string ConnectionString = "Host=localhost;Port=5432;Database=postgress-agsr-db;Username=postgres;Password=postgres;Include Error Detail=true";
         private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(5);
-
+        internal static readonly string DateTimePattern =
+    @"^(?<year>[1-9]\d{3}|0\d{3})(-(?<month>0[1-9]|1[0-2])(-(?<day>0[1-9]|[12]\d|3[01])(T(?<hour>[01]\d|2[0-3])(:(?<minute>[0-5]\d)(:(?<second>[0-5]\d|60)(\.(?<fraction>\d{1,9}))?)?)?(?<tz>Z|([+-])(0\d|1[0-3]):[0-5]\d|14:00)?)?)?)?$";
+        
         static async Task Main(string[] args)
         {
             var rootCommand = new RootCommand("FHIR Patient Seeder with Database Polling");
@@ -99,7 +102,6 @@ namespace FhirPatientSeeder
             }
         }
     }
-
     public enum Gender { Male, Female, Other, Unknown }
 
     public class Patient
@@ -109,9 +111,9 @@ namespace FhirPatientSeeder
         public string FamilyName { get; set; }
         public List<string> GivenNames { get; set; }
         public Gender Gender { get; set; }
-        public DateTime BirthDate { get; set; }
+        public DateTimeOffset BirthDate { get; set; } // Changed to DateTimeOffset
         public bool Active { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 
     public class DatabaseService
@@ -221,20 +223,80 @@ namespace FhirPatientSeeder
         }
     }
 
+    //public static class PatientGenerator
+    //{
+    //    public static List<Patient> GeneratePatients(int count)
+    //    {
+    //        var genders = new[] { "male", "female", "other", "unknown" };
+
+    //        return new Faker<Patient>()
+    //            .RuleFor(p => p.NameUse, f => f.PickRandom("official", "usual", "nickname", "anonymous"))
+    //            .RuleFor(p => p.FamilyName, f => f.Name.LastName())
+    //            .RuleFor(p => p.GivenNames, f => new List<string> { f.Name.FirstName(), f.Name.FirstName() })
+    //            .RuleFor(p => p.Gender, f => (Gender)Array.IndexOf(genders, f.PickRandom(genders)))
+    //            .RuleFor(p => p.BirthDate, f => f.Date.Between(DateTime.Now.AddYears(-100), DateTime.Now.AddYears(-18)))
+    //            .RuleFor(p => p.Active, f => f.Random.Bool(0.9f))
+    //            .Generate(count);
+    //    }
+    //}
+
     public static class PatientGenerator
     {
+        private static readonly TimeSpan[] TimezoneOffsets = {
+        TimeSpan.Zero, // UTC
+        TimeSpan.FromHours(1), TimeSpan.FromHours(2), TimeSpan.FromHours(3),
+        TimeSpan.FromHours(3).Add(TimeSpan.FromMinutes(30)), // +03:30
+        TimeSpan.FromHours(4), TimeSpan.FromHours(4).Add(TimeSpan.FromMinutes(30)), // +04:30
+        TimeSpan.FromHours(5), TimeSpan.FromHours(5).Add(TimeSpan.FromMinutes(30)), // +05:30
+        TimeSpan.FromHours(5).Add(TimeSpan.FromMinutes(45)), // +05:45
+        TimeSpan.FromHours(6), TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(30)), // +06:30
+        TimeSpan.FromHours(7), TimeSpan.FromHours(8), TimeSpan.FromHours(9),
+        TimeSpan.FromHours(9).Add(TimeSpan.FromMinutes(30)), // +09:30
+        TimeSpan.FromHours(10), TimeSpan.FromHours(10).Add(TimeSpan.FromMinutes(30)), // +10:30
+        TimeSpan.FromHours(11), TimeSpan.FromHours(12),
+        TimeSpan.FromHours(12).Add(TimeSpan.FromMinutes(45)), // +12:45
+        TimeSpan.FromHours(13), TimeSpan.FromHours(14),
+        TimeSpan.FromHours(-1), TimeSpan.FromHours(-2), TimeSpan.FromHours(-3),
+        TimeSpan.FromHours(-3).Add(TimeSpan.FromMinutes(-30)), // -03:30
+        TimeSpan.FromHours(-4), TimeSpan.FromHours(-5), TimeSpan.FromHours(-6),
+        TimeSpan.FromHours(-7), TimeSpan.FromHours(-8), TimeSpan.FromHours(-9),
+        TimeSpan.FromHours(-9).Add(TimeSpan.FromMinutes(-30)), // -09:30
+        TimeSpan.FromHours(-10), TimeSpan.FromHours(-11), TimeSpan.FromHours(-12)
+    };
+
         public static List<Patient> GeneratePatients(int count)
         {
             var genders = new[] { "male", "female", "other", "unknown" };
 
             return new Faker<Patient>()
-                .RuleFor(p => p.NameUse, f => f.PickRandom("official", "usual", "nickname", "anonymous"))
-                .RuleFor(p => p.FamilyName, f => f.Name.LastName())
-                .RuleFor(p => p.GivenNames, f => new List<string> { f.Name.FirstName(), f.Name.FirstName() })
-                .RuleFor(p => p.Gender, f => (Gender)Array.IndexOf(genders, f.PickRandom(genders)))
-                .RuleFor(p => p.BirthDate, f => f.Date.Between(DateTime.Now.AddYears(-100), DateTime.Now.AddYears(-18)))
-                .RuleFor(p => p.Active, f => f.Random.Bool(0.9f))
+                .RuleFor(p => p.BirthDate, f =>
+                {
+                    var date = f.Date.Between(
+                        new DateTime(1900, 1, 1),
+                        DateTime.Now.AddYears(-18));
+
+                    // Get random offset (not just UTC)
+                    var offset = f.PickRandom(TimezoneOffsets.Where(o => o != TimeSpan.Zero).ToArray());
+
+                    // Create DateTimeOffset with the random offset
+                    return new DateTimeOffset(date, offset);
+                })
+                // ... other rules remain the same ...
                 .Generate(count);
+        }
+
+        public static string ToFhirDateTime(DateTimeOffset dateTime)
+        {
+            if (dateTime.TimeOfDay == TimeSpan.Zero)
+            {
+                return dateTime.ToString("yyyy-MM-dd"); // Date only
+            }
+
+            var format = dateTime.Millisecond > 0 ?
+                "yyyy-MM-ddTHH:mm:ss.fff" :
+                "yyyy-MM-ddTHH:mm:ss";
+
+            return dateTime.ToString(format + "K"); // "K" formats the offset properly
         }
     }
 }

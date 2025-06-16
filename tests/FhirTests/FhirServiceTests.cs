@@ -5,22 +5,32 @@ namespace FhirServiceTests
     public class FhirServiceTests
     {
         [Theory]
-        [InlineData("1990", 1990, 1, 1, 0, 0, 0, DateTimePrecision.Year)]
-        [InlineData("1990-06", 1990, 6, 1, 0, 0, 0, DateTimePrecision.Month)]
-        [InlineData("1990-06-15", 1990, 6, 15, 0, 0, 0, DateTimePrecision.Day)]
-        [InlineData("1990-06-15T14", 1990, 6, 15, 14, 0, 0, DateTimePrecision.Hour)]
-        [InlineData("1990-06-15T14:30", 1990, 6, 15, 14, 30, 0, DateTimePrecision.Minute)]
-        [InlineData("1990-06-15T14:30:45", 1990, 6, 15, 14, 30, 45, DateTimePrecision.Second)]
-        [InlineData("1990-06-15T14:30:45.123", 1990, 6, 15, 14, 30, 45, DateTimePrecision.Millisecond)]
-        [InlineData("1990-06-15T14:30:45Z", 1990, 6, 15, 14, 30, 45, DateTimePrecision.Second)]
-        [InlineData("1990-06-15T14:30:45+02:00", 1990, 6, 15, 12, 30, 45, DateTimePrecision.Second)]
+        [InlineData("1990", 1990, 1, 1, 0, 0, 0, null, DateTimePrecision.Year)]
+        [InlineData("1990-06", 1990, 6, 1, 0, 0, 0, null, DateTimePrecision.Month)]
+        [InlineData("1990-06-15", 1990, 6, 15, 0, 0, 0, null, DateTimePrecision.Day)]
+        [InlineData("1990-06-15T14", 1990, 6, 15, 14, 0, 0, null, DateTimePrecision.Hour)]
+        [InlineData("1990-06-15T14:30", 1990, 6, 15, 14, 30, 0, null, DateTimePrecision.Minute)]
+        [InlineData("1990-06-15T14:30:45", 1990, 6, 15, 14, 30, 45, null, DateTimePrecision.Second)]
+        [InlineData("1990-06-15T14:30:45.123", 1990, 6, 15, 14, 30, 45, null, DateTimePrecision.Millisecond)]
+        [InlineData("1990-06-15T14:30:45Z", 1990, 6, 15, 14, 30, 45, "00:00:00", DateTimePrecision.Second)]
+        [InlineData("1990-06-15T14:30:45+02:00", 1990, 6, 15, 12, 30, 45, "02:00:00", DateTimePrecision.Second)]
+        [InlineData("1990-06-15T14:30:45-05:00", 1990, 6, 15, 19, 30, 45, "-05:00:00", DateTimePrecision.Second)]
+        [InlineData("1990-06-15T14:30:45+03:30", 1990, 6, 15, 11, 0, 45, "03:30:00", DateTimePrecision.Second)]
         public void ParseFhirDateTime_ValidInput_ReturnsCorrectResult(
-            string input, int year, int month, int day, int hour, int minute, int second, DateTimePrecision expectedPrecision)
+            string input,
+            int year,
+            int month,
+            int day,
+            int hour,
+            int minute,
+            int second,
+            string expectedOffsetString,
+            DateTimePrecision expectedPrecision)
         {
             // Act
-            var (parsedDate, precision) = FhirDateTimeParser.ParseFhirDateTime(input);
+            var (parsedDate, originalOffset, precision) = FhirDateTimeParser.ParseFhirDateTime(input);
 
-            // Assert
+            // Assert - check parsed UTC values
             Assert.Equal(expectedPrecision, precision);
             Assert.Equal(year, parsedDate?.Year);
             Assert.Equal(month, parsedDate?.Month);
@@ -28,6 +38,38 @@ namespace FhirServiceTests
             Assert.Equal(hour, parsedDate?.Hour);
             Assert.Equal(minute, parsedDate?.Minute);
             Assert.Equal(second, parsedDate?.Second);
+
+            // Assert - check offset
+            if (expectedOffsetString == null)
+            {
+                Assert.Null(originalOffset);
+            }
+            else
+            {
+                Assert.NotNull(originalOffset);
+                var expectedOffset = TimeSpan.Parse(expectedOffsetString);
+                Assert.Equal(expectedOffset, originalOffset);
+            }
+
+            // Additional check - verify that when we apply the original offset, we get back to the local time
+            if (originalOffset.HasValue)
+            {
+                var localTime = parsedDate.Value.ToOffset(originalOffset.Value);
+
+                // Extract the hour from the input string more safely
+                int hourInInput = 0;
+                var timePart = input.Split('T').LastOrDefault()?.Split(new[] { '+', '-', 'Z' }).FirstOrDefault();
+                if (timePart != null && timePart.Contains(':'))
+                {
+                    var hourStr = timePart.Split(':')[0];
+                    if (int.TryParse(hourStr, out var parsedHour))
+                    {
+                        hourInInput = parsedHour;
+                    }
+                }
+
+                Assert.Equal(hourInInput, localTime.Hour);
+            }
         }
 
         [Theory]

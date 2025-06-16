@@ -35,6 +35,9 @@ namespace Infrastructure.Patients
                 .IsRequired()
                 .HasColumnType("timestamp with time zone");
 
+            builder.Property(p => p.BirthDateOffset)
+                .HasColumnType("interval");
+
             builder.Property(p => p.Active)
                 .HasDefaultValue(false);
 

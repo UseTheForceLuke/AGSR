@@ -14,19 +14,18 @@
         Hour,
         Minute,
         Second,
-        Millisecond, // lets support 3 didgits fraction for now :)
-        //Microsecond, later can be added
-        //Nanosecond
+        Millisecond,
     }
 
     public static class FhirDateTimeParser
     {
         private const string DateTimePattern =
 @"^(?<year>[1-9]\d{3}|0\d{3})(-(?<month>0[1-9]|1[0-2])(-(?<day>0[1-9]|[12]\d|3[01])(T(?<hour>[01]\d|2[0-3])(:(?<minute>[0-5]\d)(:(?<second>[0-5]\d|60)(\.(?<fraction>\d{1,9}))?)?)?(?<tz>Z|([+-])(0\d|1[0-3]):[0-5]\d|14:00)?)?)?)?$";
-        
+
+
         private static readonly Regex DateTimeRegex = new Regex(DateTimePattern, RegexOptions.ExplicitCapture);
 
-        public static (DateTimeOffset? parsedDate, DateTimePrecision precision) ParseFhirDateTime(string input)
+        public static (DateTimeOffset? parsedDate, TimeSpan? originalOffset, DateTimePrecision precision) ParseFhirDateTime(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
                 throw new ArgumentException($"{nameof(input)} should not be empty on null");
@@ -52,19 +51,22 @@
 
                 // Handle timezone
                 TimeSpan offset = TimeSpan.Zero;
+                TimeSpan? originalOffset = null;
                 if (match.Groups["tz"].Success)
                 {
                     var tzValue = match.Groups["tz"].Value;
                     if (tzValue == "Z")
                     {
                         offset = TimeSpan.Zero;
+                        originalOffset = TimeSpan.Zero;
                     }
                     else
                     {
                         var sign = tzValue[0] == '+' ? 1 : -1;
                         var hours = int.Parse(tzValue.Substring(1, 2), CultureInfo.InvariantCulture);
                         var minutes = int.Parse(tzValue.Substring(4, 2), CultureInfo.InvariantCulture);
-                        offset = new TimeSpan(hours * sign, minutes * sign, 0);
+                        originalOffset = new TimeSpan(hours * sign, minutes * sign, 0);
+                        offset = originalOffset.Value;
                     }
                 }
 
@@ -73,7 +75,7 @@
                 var result = new DateTimeOffset(localDateTime, offset).ToOffset(TimeSpan.Zero);
 
                 var precision = DeterminePrecision(match);
-                return (result, precision);
+                return (result, originalOffset, precision);
             }
             catch (Exception ex)
             {
@@ -85,29 +87,27 @@
         {
             if (match.Groups["fraction"].Success)
             {
-                int fractionDigits = match.Groups["fraction"].Value.Length;
-#pragma warning disable CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
-                return fractionDigits switch
-                {
-                    <= 3 => DateTimePrecision.Millisecond,
-                    //<= 6 => DateTimePrecision.Microsecond,
-                    //_ => DateTimePrecision.Nanosecond
-                };
-#pragma warning restore CS8509 // The switch expression does not handle all possible values of its input type (it is not exhaustive).
+                return DateTimePrecision.Millisecond;
             }
-            if (match.Groups["second"].Success) return DateTimePrecision.Second;
-            if (match.Groups["minute"].Success) return DateTimePrecision.Minute;
-            if (match.Groups["hour"].Success) return DateTimePrecision.Hour;
-            if (match.Groups["day"].Success) return DateTimePrecision.Day;
-            if (match.Groups["month"].Success) return DateTimePrecision.Month;
+            if (match.Groups["second"].Success)
+                return DateTimePrecision.Second;
+            if (match.Groups["minute"].Success)
+                return DateTimePrecision.Minute;
+            if (match.Groups["hour"].Success)
+                return DateTimePrecision.Hour;
+            if (match.Groups["day"].Success)
+                return DateTimePrecision.Day;
+            if (match.Groups["month"].Success)
+                return DateTimePrecision.Month;
             return DateTimePrecision.Year;
         }
-
     }
+
     public class FhirSearchParameter
     {
         public string Prefix { get; set; } = "eq";
         public DateTimeOffset? Value { get; set; }
+        public TimeSpan? OriginalOffset { get; set; }
         public DateTimePrecision Precision { get; set; }
 
         public (DateTimeOffset start, DateTimeOffset end) GetSearchBounds()
@@ -152,157 +152,30 @@
                     (Value.Value, Value.Value),
 
                 // Not equals - returns the same range as equality, but the query will be inverted
-                ("ne", DateTimePrecision.Year) => (
-                    new DateTimeOffset(Value.Value.Year, 1, 1, 0, 0, 0, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, 12, 31, 23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Month) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, 1, 0, 0, 0, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month,
-                        DateTime.DaysInMonth(Value.Value.Year, Value.Value.Month),
-                        23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Day) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 0, 0, 0, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Hour) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 0, 0, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Minute) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 0, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 59, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Second) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, Value.Value.Offset),
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, 999, Value.Value.Offset)
-                ),
-                ("ne", DateTimePrecision.Millisecond) =>
-                    (Value.Value, Value.Value),
+                ("ne", _) => GetSearchBoundsWithPrefix("eq"),
 
                 // Greater than (returns everything after the period)
-                ("gt" or "sa", DateTimePrecision.Year) => (
-                    new DateTimeOffset(Value.Value.Year, 12, 31, 23, 59, 59, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Month) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month,
-                        DateTime.DaysInMonth(Value.Value.Year, Value.Value.Month),
-                        23, 59, 59, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Day) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 23, 59, 59, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Hour) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 59, 59, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Minute) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 59, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Second) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, 999, Value.Value.Offset),
-                    maxDate
-                ),
-                ("gt" or "sa", DateTimePrecision.Millisecond) => (
-                    Value.Value,
+                ("gt" or "sa", _) => (
+                    GetSearchBoundsWithPrefix("eq").end,
                     maxDate
                 ),
 
                 // Less than (returns everything before the period)
-                ("lt" or "eb", DateTimePrecision.Year) => (
+                ("lt" or "eb", _) => (
                     minDate,
-                    new DateTimeOffset(Value.Value.Year, 1, 1, 0, 0, 0, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Month) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, 1, 0, 0, 0, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Day) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 0, 0, 0, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Hour) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 0, 0, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Minute) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 0, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Second) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, Value.Value.Offset)
-                ),
-                ("lt" or "eb", DateTimePrecision.Millisecond) => (
-                    minDate,
-                    Value.Value
+                    GetSearchBoundsWithPrefix("eq").start
                 ),
 
                 // Greater than or equal (returns the period and everything after)
-                ("ge", DateTimePrecision.Year) => (
-                    new DateTimeOffset(Value.Value.Year, 1, 1, 0, 0, 0, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Month) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, 1, 0, 0, 0, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Day) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 0, 0, 0, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Hour) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 0, 0, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Minute) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 0, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Second) => (
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, Value.Value.Offset),
-                    maxDate
-                ),
-                ("ge", DateTimePrecision.Millisecond) => (
-                    Value.Value,
+                ("ge", _) => (
+                    GetSearchBoundsWithPrefix("eq").start,
                     maxDate
                 ),
 
                 // Less than or equal (returns everything up through the period)
-                ("le", DateTimePrecision.Year) => (
+                ("le", _) => (
                     minDate,
-                    new DateTimeOffset(Value.Value.Year, 12, 31, 23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Month) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month,
-                        DateTime.DaysInMonth(Value.Value.Year, Value.Value.Month),
-                        23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Day) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, 23, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Hour) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, 59, 59, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Minute) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, 59, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Second) => (
-                    minDate,
-                    new DateTimeOffset(Value.Value.Year, Value.Value.Month, Value.Value.Day, Value.Value.Hour, Value.Value.Minute, Value.Value.Second, 999, Value.Value.Offset)
-                ),
-                ("le", DateTimePrecision.Millisecond) => (
-                    minDate,
-                    Value.Value
+                    GetSearchBoundsWithPrefix("eq").end
                 ),
 
                 // Approximate (adds padding around the value)
@@ -343,6 +216,17 @@
 #pragma warning restore CA1308 // Normalize strings to uppercase
         }
 
+        private (DateTimeOffset start, DateTimeOffset end) GetSearchBoundsWithPrefix(string prefix)
+        {
+            var temp = new FhirSearchParameter
+            {
+                Prefix = prefix,
+                Value = Value,
+                Precision = Precision
+            };
+            return temp.GetSearchBounds();
+        }
+
         public static FhirSearchParameter Parse(string parameter)
         {
             if (string.IsNullOrWhiteSpace(parameter))
@@ -361,8 +245,9 @@
                 }
             }
 
-            var (parsedDate, precision) = FhirDateTimeParser.ParseFhirDateTime(parameter);
+            var (parsedDate, originalOffset, precision) = FhirDateTimeParser.ParseFhirDateTime(parameter);
             result.Value = parsedDate;
+            result.OriginalOffset = originalOffset;
             result.Precision = precision;
 
             return result;
@@ -395,12 +280,10 @@
                     Expression.LessThan(dateProperty, Expression.Constant(start)),
                     Expression.GreaterThan(dateProperty, Expression.Constant(end))
                 ),
-                "gt" => Expression.GreaterThan(dateProperty, Expression.Constant(start)),
-                "lt" => Expression.LessThan(dateProperty, Expression.Constant(end)),
+                "gt" or "sa" => Expression.GreaterThan(dateProperty, Expression.Constant(start)),
+                "lt" or "eb" => Expression.LessThan(dateProperty, Expression.Constant(end)),
                 "ge" => Expression.GreaterThanOrEqual(dateProperty, Expression.Constant(start)),
                 "le" => Expression.LessThanOrEqual(dateProperty, Expression.Constant(end)),
-                "sa" => Expression.GreaterThan(dateProperty, Expression.Constant(start)),
-                "eb" => Expression.LessThan(dateProperty, Expression.Constant(end)),
                 _ => Expression.AndAlso(
                     Expression.GreaterThanOrEqual(dateProperty, Expression.Constant(start)),
                     Expression.LessThanOrEqual(dateProperty, Expression.Constant(end))
@@ -417,6 +300,7 @@
     {
         public int Id { get; set; }
         public DateTimeOffset BirthDate { get; set; }
+        public TimeSpan? BirthDateOffset { get; set; }
         public DateTimePrecision BirthDatePrecision { get; set; }
     }
 }

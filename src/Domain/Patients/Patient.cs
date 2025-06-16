@@ -13,6 +13,7 @@ namespace Domain.Patients
 
         public Gender Gender { get; set; } = Gender.Unknown;
         public DateTimeOffset BirthDate { get; set; }
+        public TimeSpan? BirthDateOffset { get; set; }
         public bool Active { get; set; } = true;
         public DateTime CreatedAt { get; set; }
 
