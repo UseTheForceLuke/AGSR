@@ -1,10 +1,7 @@
-﻿using Application.Abstractions.Authentication;
-using Application.Abstractions.Data;
+﻿using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
-using Application.Patients.Create;
 using Domain.Patients;
-using Domain.Users;
-using Microsoft.EntityFrameworkCore;
+using FhirService;
 using SharedKernel;
 
 namespace Application.Patients.Create
@@ -25,6 +22,8 @@ namespace Application.Patients.Create
 
         public async Task<Result<Guid>> Handle(CreatePatientCommand command, CancellationToken cancellationToken)
         {
+            var result = FhirDateTimeParser.ParseFhirDateTime(command.BirthDate);
+
             var patient = new Patient
             {
                 Id = Guid.NewGuid(),
@@ -32,7 +31,8 @@ namespace Application.Patients.Create
                 FamilyName = command.Name.Family,
                 GivenNames = command.Name.Given,
                 Gender = Enum.Parse<Gender>(command.Gender, ignoreCase: true),
-                //BirthDate = command.BirthDate,
+                BirthDate = result.parsedDate!.Value,
+                BirthDateOffset = result.originalOffset,
                 Active = command.Active,
                 CreatedAt = _dateTimeProvider.UtcNow
             };

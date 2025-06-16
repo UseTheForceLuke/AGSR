@@ -12,15 +12,15 @@ namespace FhirServiceTests
 
         #region ApplyDateSearch
 
-        private readonly IQueryable<Patient> _patients = new List<Patient>
+        private readonly IQueryable<PatientDto> _patients = new List<PatientDto>
         {
-            new Patient { Id = 1, BirthDate = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) },
-            new Patient { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 0, 0, 0, TimeSpan.Zero) },
-            new Patient { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero) },
-            new Patient { Id = 4, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.Zero) },
-            new Patient { Id = 5, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 45, TimeSpan.Zero) },
-            new Patient { Id = 6, BirthDate = new DateTimeOffset(2020, 12, 31, 23, 59, 59, TimeSpan.Zero) },
-            new Patient { Id = 7, BirthDate = new DateTimeOffset(2021, 1, 1, 0, 0, 0, TimeSpan.Zero) }
+            new PatientDto { Id = 1, BirthDate = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero) },
+            new PatientDto { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 0, 0, 0, TimeSpan.Zero) },
+            new PatientDto { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 0, 0, TimeSpan.Zero) },
+            new PatientDto { Id = 4, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.Zero) },
+            new PatientDto { Id = 5, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 45, TimeSpan.Zero) },
+            new PatientDto { Id = 6, BirthDate = new DateTimeOffset(2020, 12, 31, 23, 59, 59, TimeSpan.Zero) },
+            new PatientDto { Id = 7, BirthDate = new DateTimeOffset(2021, 1, 1, 0, 0, 0, TimeSpan.Zero) }
         }.AsQueryable();
 
         [Fact]
@@ -132,16 +132,16 @@ namespace FhirServiceTests
         public void ApplyDateSearch_ApMonth_ReturnsApproximateMonth3()
         {
             // Arrange
-            var testPatients = new List<Patient>
+            var testPatients = new List<PatientDto>
             {
-                new Patient { Id = 1, BirthDate = new DateTimeOffset(2020, 4, 30, 23, 59, 59, TimeSpan.Zero) },
-                new Patient { Id = 2, BirthDate = new DateTimeOffset(2020, 5, 1, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { Id = 3, BirthDate = new DateTimeOffset(2020, 5, 31, 23, 59, 59, TimeSpan.Zero) },
-                new Patient { Id = 4, BirthDate = new DateTimeOffset(2020, 6, 1, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { Id = 5, BirthDate = new DateTimeOffset(2020, 6, 30, 23, 59, 59, TimeSpan.Zero) },
-                new Patient { Id = 6, BirthDate = new DateTimeOffset(2020, 7, 1, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { Id = 7, BirthDate = new DateTimeOffset(2020, 7, 31, 23, 59, 59, TimeSpan.Zero) },
-                new Patient { Id = 8, BirthDate = new DateTimeOffset(2020, 8, 1, 0, 0, 0, TimeSpan.Zero) }
+                new PatientDto { Id = 1, BirthDate = new DateTimeOffset(2020, 4, 30, 23, 59, 59, TimeSpan.Zero) },
+                new PatientDto { Id = 2, BirthDate = new DateTimeOffset(2020, 5, 1, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { Id = 3, BirthDate = new DateTimeOffset(2020, 5, 31, 23, 59, 59, TimeSpan.Zero) },
+                new PatientDto { Id = 4, BirthDate = new DateTimeOffset(2020, 6, 1, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { Id = 5, BirthDate = new DateTimeOffset(2020, 6, 30, 23, 59, 59, TimeSpan.Zero) },
+                new PatientDto { Id = 6, BirthDate = new DateTimeOffset(2020, 7, 1, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { Id = 7, BirthDate = new DateTimeOffset(2020, 7, 31, 23, 59, 59, TimeSpan.Zero) },
+                new PatientDto { Id = 8, BirthDate = new DateTimeOffset(2020, 8, 1, 0, 0, 0, TimeSpan.Zero) }
             }.AsQueryable();
 
             var searchParam = FhirSearchParameter.Parse("ap2020-06");
@@ -164,11 +164,11 @@ namespace FhirServiceTests
         [Fact]
         public void ApplyDateSearch_ApMonth_HandlesLeapYear()
         {
-            var testPatients = new List<Patient>
+            var testPatients = new List<PatientDto>
             {
-                new Patient { Id = 1, BirthDate = new DateTimeOffset(2020, 2, 28, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { Id = 2, BirthDate = new DateTimeOffset(2020, 2, 29, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { Id = 3, BirthDate = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }
+                new PatientDto { Id = 1, BirthDate = new DateTimeOffset(2020, 2, 28, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { Id = 2, BirthDate = new DateTimeOffset(2020, 2, 29, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { Id = 3, BirthDate = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }
             }.AsQueryable();
 
             var searchParam = FhirSearchParameter.Parse("ap2020-02");
@@ -181,7 +181,7 @@ namespace FhirServiceTests
         public void ApplyDateSearch_EqMillisecond_ReturnsExactMatch()
         {
             var testDate = new DateTimeOffset(2020, 6, 15, 12, 30, 45, 500, TimeSpan.Zero);
-            var patients = _patients.Concat(new[] { new Patient { Id = 8, BirthDate = testDate } });
+            var patients = _patients.Concat(new[] { new PatientDto { Id = 8, BirthDate = testDate } });
 
             var searchParam = new FhirSearchParameter
             {
@@ -209,8 +209,8 @@ namespace FhirServiceTests
             // Arrange
             var patients = new[]
             {
-                new Patient { BirthDate = new DateTimeOffset(1990, 1, 1, 0, 0, 0, TimeSpan.Zero), BirthDatePrecision = DateTimePrecision.Year },
-                new Patient { BirthDate = new DateTimeOffset(1991, 1, 1, 0, 0, 0, TimeSpan.Zero), BirthDatePrecision = DateTimePrecision.Year }
+                new PatientDto { BirthDate = new DateTimeOffset(1990, 1, 1, 0, 0, 0, TimeSpan.Zero), BirthDatePrecision = DateTimePrecision.Year },
+                new PatientDto { BirthDate = new DateTimeOffset(1991, 1, 1, 0, 0, 0, TimeSpan.Zero), BirthDatePrecision = DateTimePrecision.Year }
             }.AsQueryable();
 
             var searchParam = FhirSearchParameter.Parse("eq1990");
@@ -229,8 +229,8 @@ namespace FhirServiceTests
             // Arrange
             var patients = new[]
             {
-                new Patient { BirthDate = new DateTimeOffset(1990, 5, 1, 0, 0, 0, TimeSpan.Zero) },
-                new Patient { BirthDate = new DateTimeOffset(1990, 7, 1, 0, 0, 0, TimeSpan.Zero) }
+                new PatientDto { BirthDate = new DateTimeOffset(1990, 5, 1, 0, 0, 0, TimeSpan.Zero) },
+                new PatientDto { BirthDate = new DateTimeOffset(1990, 7, 1, 0, 0, 0, TimeSpan.Zero) }
             }.AsQueryable();
 
             var searchParam = FhirSearchParameter.Parse("gt1990-06");
@@ -303,12 +303,12 @@ namespace FhirServiceTests
         public void ApplyDateSearch_WithTimeZone_ReturnsCorrectResults()
         {
             // Arrange
-            var testPatients = new List<Patient>
+            var testPatients = new List<PatientDto>
             {
                 // UTC times
-                new Patient { Id = 1, BirthDate = new DateTimeOffset(2020, 6, 15, 7, 0, 0, TimeSpan.Zero) },  // Equivalent to 12:30+05:30
-                new Patient { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 15, 30, 0, TimeSpan.Zero) }, // Equivalent to 12:30-03:00
-                new Patient { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.Zero) }  // UTC
+                new PatientDto { Id = 1, BirthDate = new DateTimeOffset(2020, 6, 15, 7, 0, 0, TimeSpan.Zero) },  // Equivalent to 12:30+05:30
+                new PatientDto { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 15, 30, 0, TimeSpan.Zero) }, // Equivalent to 12:30-03:00
+                new PatientDto { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.Zero) }  // UTC
             }.AsQueryable();
 
             // Search for 12:30 in +05:30 timezone (which is 07:00 UTC)
@@ -326,12 +326,12 @@ namespace FhirServiceTests
         public void ApplyDateSearch_WithDifferentTimeZones_ComparesCorrectly()
         {
             // Arrange
-            var testPatients = new List<Patient>
+            var testPatients = new List<PatientDto>
             {
                 // All represent the same moment in time in different timezones
-                new Patient { Id = 1, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.FromHours(2)) },  // 12:30+02:00 (10:30 UTC)
-                new Patient { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 5, 30, 0, TimeSpan.FromHours(-5)) },   // 05:30-05:00 (10:30 UTC)
-                new Patient { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 10, 30, 0, TimeSpan.Zero) }           // 10:30 UTC
+                new PatientDto { Id = 1, BirthDate = new DateTimeOffset(2020, 6, 15, 12, 30, 0, TimeSpan.FromHours(2)) },  // 12:30+02:00 (10:30 UTC)
+                new PatientDto { Id = 2, BirthDate = new DateTimeOffset(2020, 6, 15, 5, 30, 0, TimeSpan.FromHours(-5)) },   // 05:30-05:00 (10:30 UTC)
+                new PatientDto { Id = 3, BirthDate = new DateTimeOffset(2020, 6, 15, 10, 30, 0, TimeSpan.Zero) }           // 10:30 UTC
             }.AsQueryable();
 
             // Search for 12:30 in +02:00 timezone (which is 10:30 UTC)

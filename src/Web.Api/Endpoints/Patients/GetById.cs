@@ -1,4 +1,6 @@
 ﻿using Application.Abstractions.Messaging;
+using Application.Patients;
+using Application.Patients.GetByBirthDate;
 using Application.Patients.GetById;
 using Domain.Patients;
 using SharedKernel;

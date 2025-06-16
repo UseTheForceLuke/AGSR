@@ -49,8 +49,9 @@ namespace Web.Api.Endpoints.Patients
 
                 return result.Match(Results.Ok, CustomResults.Problem);
             })
-            .WithTags("Patients");
+            .WithTags("Patients")
             //.RequireAuthorization();
+            .WithName("CreatePatient");
         }
     }
 }

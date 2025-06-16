@@ -33,6 +33,7 @@ namespace Application.Patients.GetById
                         p.GivenNames),
                     p.Gender.ToString(),
                     p.BirthDate,
+                    p.BirthDateOffset,
                     p.Active,
                     p.CreatedAt))
                 .FirstOrDefaultAsync(cancellationToken);

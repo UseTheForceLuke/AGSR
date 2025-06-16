@@ -1,4 +1,4 @@
-﻿namespace Application.Patients.GetById
+﻿namespace Application.Patients
 {
     public sealed record PatientNameResponse(
         Guid Id,
@@ -10,6 +10,7 @@
         PatientNameResponse Name,
         string Gender,
         DateTimeOffset BirthDate,
+        TimeSpan? BirthDateOffset,
         bool Active,
         DateTime CreatedAt);
 }

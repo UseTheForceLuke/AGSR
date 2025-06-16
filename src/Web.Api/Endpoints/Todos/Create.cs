@@ -1,6 +1,7 @@
 ﻿using Application.Abstractions.Messaging;
 using Application.Todos.Create;
 using Domain.Todos;
+using FhirService;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
@@ -24,7 +25,7 @@ namespace Web.Api.Endpoints.Todos
                 Request request,
                 ICommandHandler<CreateTodoCommand, Guid> handler,
                 CancellationToken cancellationToken) =>
-            {
+            {   
                 var command = new CreateTodoCommand
                 {
                     UserId = request.UserId,
