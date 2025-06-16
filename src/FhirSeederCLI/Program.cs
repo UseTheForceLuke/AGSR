@@ -158,33 +158,6 @@ namespace FhirPatientSeeder
             return result == 1;
         }
 
-        //public async Task SeedPatients(IEnumerable<Patient> patients)
-        //{
-        //    using (var db = new NpgsqlConnection(_connectionString))
-        //    {
-        //        await db.OpenAsync();
-        //        using (var transaction = db.BeginTransaction())
-        //        {
-        //            try
-        //            {
-        //                await db.ExecuteAsync(@"
-        //                    INSERT INTO patients 
-        //                    (id, name_use, family_name, given_names, gender, birth_date, active, created_at)
-        //                    VALUES 
-        //                    (@Id, @NameUse, @FamilyName, @GivenNames, @Gender, @BirthDate, @Active, @CreatedAt)",
-        //                    patients, transaction);
-
-        //                transaction.Commit();
-        //            }
-        //            catch
-        //            {
-        //                transaction.Rollback();
-        //                throw;
-        //            }
-        //        }
-        //    }
-        //}
-
         public static class JsonHelper
         {
             public static string ToJson(object value)
