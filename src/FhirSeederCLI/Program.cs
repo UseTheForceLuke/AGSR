@@ -285,20 +285,18 @@ namespace FhirSeederCLI
                     }
 
                     var offset = p.BirthDateOffset.Value;
-                    var dateTimeWithOffset = new DateTimeOffset(p.BirthDate, offset);
+                    var originalDateTime = p.BirthDate - offset; // Adjust by offset
 
-                    // For UTC, randomly choose between Z or +00:00
                     if (offset == TimeSpan.Zero)
                     {
                         return f.Random.Bool()
-                            ? dateTimeWithOffset.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                            : dateTimeWithOffset.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
+                            ? originalDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            : originalDateTime.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
                     }
 
-                    // For other offsets
                     var offsetSign = offset < TimeSpan.Zero ? "-" : "+";
                     var absoluteOffset = offset.Duration();
-                    return $"{dateTimeWithOffset:yyyy-MM-ddTHH:mm:ss}{offsetSign}{absoluteOffset:hh\\:mm}";
+                    return $"{originalDateTime:yyyy-MM-ddTHH:mm:ss}{offsetSign}{absoluteOffset:hh\\:mm}";
                 })
                 .RuleFor(p => p.Active, f => f.Random.Bool(0.9f))
                 .Generate(count);
