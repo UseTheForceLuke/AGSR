@@ -7,7 +7,7 @@ unicode + sign in query: %2B<br>
 supports "eq", "ne", "gt", "lt", "ge", "le", "sa", "eb", "ap"<br>
 
 **how to run**: go to web-api folder and run dotnet dev-certs https -ep "$env:APPDATA\ASP.NET\Https\Web.Api.pfx" -p "YourSecurePassword" then go to root folder and run docker-compose up -d --build<br>
-to rerun fhir-seeder-cli - just start a container again - it will seed 100 patients, to delete seed execute postgres sql: truncate public.patients /patients<br>
+to rerun(seed more) fhir-seeder-cli - just start a container again - it will seed 100 patients, to delete seed execute postgres sql: truncate public.patients /patients<br>
 swagger<br>
 https://localhost:5001/swagger/index.html<br>
 http://localhost:5000/swagger/index.html<br>
