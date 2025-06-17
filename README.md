@@ -24,7 +24,7 @@ swagger<br>
 https://localhost:5001/swagger/index.html<br>
 http://localhost:5000/swagger/index.html<br>
 
-some examples:<br>
+**Some examples**:<br>
 
 POST /patients<br>
 where birthDate:<br>
