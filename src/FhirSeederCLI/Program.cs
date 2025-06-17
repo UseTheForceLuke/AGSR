@@ -1,321 +1,130 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Bogus;
-using Dapper;
-using Npgsql;
-using Polly;
-using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.Linq;
-using System.Collections;
-using System.Text.RegularExpressions;
-using System.Globalization;
 
 namespace FhirSeederCLI
 {
     class Program
     {
-        private const string ConnectionString = "Host=localhost;Port=5432;Database=postgress-agsr-db;Username=postgres;Password=postgres;Include Error Detail=true";
-        private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(5);
-        internal static readonly string DateTimePattern =
-    @"^(?<year>[1-9]\d{3}|0\d{3})(-(?<month>0[1-9]|1[0-2])(-(?<day>0[1-9]|[12]\d|3[01])(T(?<hour>[01]\d|2[0-3])(:(?<minute>[0-5]\d)(:(?<second>[0-5]\d|60)(\.(?<fraction>\d{1,9}))?)?)?(?<tz>Z|([+-])(0\d|1[0-3]):[0-5]\d|14:00)?)?)?)?$";
+        private static readonly HttpClient client = new HttpClient();
+        private static readonly string baseUrl = "http://localhost:5000/patients";
+        private static readonly Random random = new Random();
 
         static async Task Main(string[] args)
         {
-            var rootCommand = new RootCommand("FHIR Patient Seeder with Database Polling");
+            Console.WriteLine("FHIR Patient Data Generator - Hour-Based Timezone Offsets");
+            Console.WriteLine("--------------------------------------------------------");
 
-            var countOption = new Option<int>(
-                new[] { "--count", "-c" },
-                () => 100,
-                "Number of patients to generate");
+            await GenerateAndPostTestPatients(100);
 
-            var timeoutOption = new Option<int>(
-                new[] { "--timeout", "-t" },
-                () => 120,
-                "Maximum wait time in seconds for database to be ready");
-
-            rootCommand.AddOption(countOption);
-            rootCommand.AddOption(timeoutOption);
-
-            rootCommand.Handler = CommandHandler.Create<int, int>(async (count, timeout) =>
-            {
-                await RunSeeder(count, timeout);
-            });
-
-            await rootCommand.InvokeAsync(args);
+            Console.WriteLine("\nData generation complete. Press any key to exit.");
+            Console.ReadKey();
         }
 
-        private static async Task RunSeeder(int count, int timeoutSeconds)
+        private static async Task GenerateAndPostTestPatients(int count)
         {
-            try
+            Console.WriteLine($"\nGenerating {count} test patients...");
+
+            for (int i = 0; i < count; i++)
             {
-                var dbService = new DatabaseService(ConnectionString);
-                var maxWaitTime = TimeSpan.FromSeconds(timeoutSeconds);
-                var startTime = DateTime.UtcNow;
-                bool isReady = false;
-
-                Console.WriteLine($"Waiting for database to be ready (max {maxWaitTime.TotalSeconds} seconds)...");
-
-                while (!isReady && DateTime.UtcNow - startTime < maxWaitTime)
+                var patient = GeneratePatient();
+                var json = JsonSerializer.Serialize(patient, new JsonSerializerOptions
                 {
-                    try
-                    {
-                        isReady = await dbService.VerifyDatabaseReady();
-                        if (!isReady)
-                        {
-                            Console.WriteLine("Database not ready yet. Waiting...");
-                            await Task.Delay(InitialDelay);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Database check failed: {ex.Message}");
-                        await Task.Delay(InitialDelay);
-                    }
-                }
-
-                if (!isReady)
-                {
-                    Console.WriteLine("Timeout reached. Database not ready.");
-                    return;
-                }
-
-                Console.WriteLine("Database verified. Generating patients...");
-                var patients = PatientGenerator.GeneratePatients(count);
-
-                Console.WriteLine($"Generated {patients.Count} patients. Sample:");
-                foreach (var p in patients.GetRange(0, Math.Min(3, patients.Count)))
-                {
-                    Console.WriteLine($"- {p.FamilyName}, {string.Join(" ", p.GivenNames)} | " +
-                                    $"Gender: {p.Gender} | DOB: {p.BirthDate:yyyy-MM-dd} | Offset: {p.BirthDateOffset}");
-                }
-
-                Console.WriteLine("Seeding database...");
-                await dbService.SeedPatients(patients);
-
-                Console.WriteLine("Seeding completed successfully!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
-        }
-    }
-
-    public enum Gender { Male, Female, Other, Unknown }
-
-    public class Patient
-    {
-        public Guid Id { get; set; } = Guid.NewGuid();
-        public string NameUse { get; set; }
-        public string FamilyName { get; set; }
-        public List<string> GivenNames { get; set; }
-        public Gender Gender { get; set; }
-        public DateTime BirthDate { get; set; } // Changed to DateTime
-        public TimeSpan? BirthDateOffset { get; set; } // Added separate offset property
-        public string OriginalBirthDate { get; set; }
-        public bool Active { get; set; } = true;
-        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
-
-        public DateTimeOffset GetBirthDateTimeOffset()
-        {
-            return new DateTimeOffset(BirthDate, BirthDateOffset.HasValue ? BirthDateOffset.Value : TimeSpan.Zero);
-        }
-    }
-
-    public class DatabaseService
-    {
-        private readonly string _connectionString;
-
-        public DatabaseService(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        public async Task<bool> VerifyDatabaseReady()
-        {
-            var policy = Policy
-                .Handle<Exception>()
-                .WaitAndRetryAsync(6, retryAttempt =>
-                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-
-            try
-            {
-                return await policy.ExecuteAsync(async () =>
-                {
-                    using (var db = new NpgsqlConnection(_connectionString))
-                    {
-                        await db.OpenAsync();
-                        return await DoesTableExist(db, "patients");
-                    }
+                    IgnoreNullValues = true,
+                    WriteIndented = true
                 });
-            }
-            catch
-            {
-                return false;
+
+                Console.WriteLine($"\nPatient {i + 1} JSON:");
+                Console.WriteLine(json);
+
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(baseUrl, content);
+
+                Console.WriteLine(response.IsSuccessStatusCode
+                    ? "Status: Success"
+                    : $"Status: Failed ({response.StatusCode})");
             }
         }
 
-        private async Task<bool> DoesTableExist(IDbConnection db, string tableName)
+        private static dynamic GeneratePatient()
         {
-            var result = await db.QueryFirstOrDefaultAsync<int>(
-                @"SELECT 1 FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'patients'",
-                new { tableName = tableName.ToLower() });
+            var format = random.Next(0, 7); // 7 possible formats
+            string birthDate;
+            var year = random.Next(1950, 2023);
+            var month = random.Next(1, 13);
+            var day = random.Next(1, DateTime.DaysInMonth(year, month) + 1);
 
-            return result == 1;
-        }
-
-        public static class JsonHelper
-        {
-            public static string ToJson(object value)
+            switch (format)
             {
-                // Simple JSON serializer for .NET Core 3.1
-                if (value == null)
-                    return "null";
-                if (value is string str)
-                    return $"\"{str.Replace("\"", "\\\"")}\"";
-                if (value is IEnumerable enumerable)
+                case 0: // Hour:Minute:Second
+                    birthDate = $"{year}-{month:D2}-{day:D2}T" +
+                               $"{random.Next(0, 24):D2}:{random.Next(0, 60):D2}:{random.Next(0, 60):D2}";
+                    break;
+
+                case 1: // Hour with timezone (hour-based offset only)
+                    birthDate = $"{year}-{month:D2}-{day:D2}T" +
+                               $"{random.Next(0, 24):D2}" +
+                               $"{GetHourBasedTimezone()}";
+                    break;
+
+                case 2: // Hour:Minute with timezone (hour-based offset only)
+                    birthDate = $"{year}-{month:D2}-{day:D2}T" +
+                                $"{random.Next(0, 24):D2}:{random.Next(0, 60):D2}" +
+                                $"{GetHourBasedTimezone()}";
+                    break;
+
+                case 3: // Hour:Minute:Second with timezone (hour-based offset only)
+                    birthDate = $"{year}-{month:D2}-{day:D2}T" +
+                               $"{random.Next(0, 24):D2}:{random.Next(0, 60):D2}:{random.Next(0, 60):D2}" +
+                               $"{GetHourBasedTimezone()}";
+                    break;
+
+                case 4: // Year only
+                    birthDate = $"{year}";
+                    break;
+
+                case 5: // Year-Month
+                    birthDate = $"{year}-{month:D2}";
+                    break;
+
+                case 6: // Year-Month-Day
+                default:
+                    birthDate = $"{year}-{month:D2}-{day:D2}";
+                    break;
+            }
+
+            return new
+            {
+                name = new
                 {
-                    var items = new List<string>();
-                    foreach (var item in enumerable)
-                    {
-                        items.Add(ToJson(item));
-                    }
-                    return $"[{string.Join(",", items)}]";
-                }
-                return value.ToString().ToLower(); // For booleans
-            }
+                    family = LastNames[random.Next(LastNames.Length)],
+                    given = new[] { FirstNames[random.Next(FirstNames.Length)] }
+                },
+                gender = Genders[random.Next(Genders.Length)],
+                birthDate = birthDate,
+                active = random.NextDouble() > 0.2 // 80% active
+            };
         }
 
-        public async Task SeedPatients(IEnumerable<Patient> patients)
+        private static string GetHourBasedTimezone()
         {
-            using (var db = new NpgsqlConnection(_connectionString))
+            switch (random.Next(0, 4))
             {
-                await db.OpenAsync();
-
-                using (var transaction = db.BeginTransaction())
-                {
-                    try
-                    {
-                        foreach (var patient in patients)
-                        {
-                            await db.ExecuteAsync(@"
-                                INSERT INTO patients 
-                                (id, name_use, family_name, given_names, gender, birth_date, 
-                                 birth_date_offset, original_birth_date, active, created_at)
-                                VALUES 
-                                (@Id, @NameUse, @FamilyName, @GivenNames::jsonb, @Gender, @BirthDate, 
-                                 @BirthDateOffset, @OriginalBirthDate::text, @Active, @CreatedAt)",
-                                new
-                                {
-                                    patient.Id,
-                                    patient.NameUse,
-                                    patient.FamilyName,
-                                    GivenNames = JsonHelper.ToJson(patient.GivenNames),
-                                    Gender = patient.Gender.ToString(),
-                                    patient.BirthDate,
-                                    BirthDateOffset = patient.BirthDateOffset,
-                                    OriginalBirthDate = patient.OriginalBirthDate, // Make sure this matches the case
-                                    patient.Active,
-                                    patient.CreatedAt
-                                },
-                                transaction);
-                        }
-                        transaction.Commit();
-                        Console.WriteLine($"Successfully seeded {patients.Count()} patients");
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        Console.WriteLine($"Database error: {ex.Message}");
-                        throw;
-                    }
-                }
+                case 0:
+                    return "Z";  // UTC
+                case 1:
+                    return $"+{random.Next(0, 15):D2}:00";  // Positive offset (hours only)
+                case 2:
+                    return $"-{random.Next(0, 12):D2}:00";  // Negative offset (hours only)
+                default:
+                    return null; // No timezone
             }
         }
-    }
 
-    public static class PatientGenerator
-    {
-        private static readonly TimeSpan?[] TimezoneOffsets = {
-            TimeSpan.Zero, // UTC
-            TimeSpan.FromHours(1), TimeSpan.FromHours(2), TimeSpan.FromHours(3),
-            TimeSpan.FromHours(3).Add(TimeSpan.FromMinutes(30)), // +03:30
-            TimeSpan.FromHours(4), TimeSpan.FromHours(4).Add(TimeSpan.FromMinutes(30)), // +04:30
-            TimeSpan.FromHours(5), TimeSpan.FromHours(5).Add(TimeSpan.FromMinutes(30)), // +05:30
-            TimeSpan.FromHours(5).Add(TimeSpan.FromMinutes(45)), // +05:45
-            TimeSpan.FromHours(6), TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(30)), // +06:30
-            TimeSpan.FromHours(7), TimeSpan.FromHours(8), TimeSpan.FromHours(9),
-            TimeSpan.FromHours(9).Add(TimeSpan.FromMinutes(30)), // +09:30
-            TimeSpan.FromHours(10), TimeSpan.FromHours(10).Add(TimeSpan.FromMinutes(30)), // +10:30
-            TimeSpan.FromHours(11), TimeSpan.FromHours(12),
-            TimeSpan.FromHours(12).Add(TimeSpan.FromMinutes(45)), // +12:45
-            TimeSpan.FromHours(13), TimeSpan.FromHours(14),
-            TimeSpan.FromHours(-1), TimeSpan.FromHours(-2), TimeSpan.FromHours(-3),
-            TimeSpan.FromHours(-3).Add(TimeSpan.FromMinutes(-30)), // -03:30
-            TimeSpan.FromHours(-4), TimeSpan.FromHours(-5), TimeSpan.FromHours(-6),
-            TimeSpan.FromHours(-7), TimeSpan.FromHours(-8), TimeSpan.FromHours(-9),
-            TimeSpan.FromHours(-9).Add(TimeSpan.FromMinutes(-30)), // -09:30
-            TimeSpan.FromHours(-10), TimeSpan.FromHours(-11), TimeSpan.FromHours(-12),
-            null
-        };
-
-        public static List<Patient> GeneratePatients(int count)
-        {
-            var genders = new[] { "male", "female", "other", "unknown" };
-
-            var list = new Faker<Patient>()
-                .RuleFor(p => p.NameUse, f => f.PickRandom("official", "usual", "nickname", "anonymous"))
-                .RuleFor(p => p.FamilyName, f => f.Name.LastName())
-                .RuleFor(p => p.GivenNames, f => new List<string> { f.Name.FirstName(), f.Name.FirstName() })
-                .RuleFor(p => p.Gender, f => (Gender)Array.IndexOf(genders, f.PickRandom(genders)))
-                .RuleFor(p => p.BirthDate, f => f.Date.Between(
-                    new DateTime(1900, 1, 1),
-                    DateTime.Now.AddYears(-18)))
-                .RuleFor(p => p.BirthDateOffset, f => f.PickRandom(TimezoneOffsets))
-                .RuleFor(p => p.OriginalBirthDate, (f, p) =>
-                {
-                    if (p.BirthDateOffset == null)
-                    {
-                        return p.BirthDate.ToString("yyyy-MM-dd");
-                    }
-
-                    var offset = p.BirthDateOffset.Value;
-                    var originalDateTime = p.BirthDate - offset; // Adjust by offset
-
-                    if (offset == TimeSpan.Zero)
-                    {
-                        return f.Random.Bool()
-                            ? originalDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ")
-                            : originalDateTime.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
-                    }
-
-                    var offsetSign = offset < TimeSpan.Zero ? "-" : "+";
-                    var absoluteOffset = offset.Duration();
-                    return $"{originalDateTime:yyyy-MM-ddTHH:mm:ss}{offsetSign}{absoluteOffset:hh\\:mm}";
-                })
-                .RuleFor(p => p.Active, f => f.Random.Bool(0.9f))
-                .Generate(count);
-
-            return list;
-        }
-
-        public static string ToFhirDateTime(DateTimeOffset dateTime)
-        {
-            if (dateTime.TimeOfDay == TimeSpan.Zero)
-            {
-                return dateTime.ToString("yyyy-MM-dd"); // Date only
-            }
-
-            var format = dateTime.Millisecond > 0 ?
-                "yyyy-MM-ddTHH:mm:ss.fff" :
-                "yyyy-MM-ddTHH:mm:ss";
-
-            return dateTime.ToString(format + "K"); // "K" formats the offset properly
-        }
+        private static readonly string[] FirstNames = { "James", "Mary", "John", "Patricia", "Robert", "Jennifer" };
+        private static readonly string[] LastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Miller" };
+        private static readonly string[] Genders = { "male", "female", "other", "unknown" };
     }
 }

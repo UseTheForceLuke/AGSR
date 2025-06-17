@@ -23,7 +23,7 @@ namespace Application.Patients.GetByBirthDate
             var expr = _context.Patients.AsQueryable()
                 .AsNoTracking();
 
-            if (query.birthDates != null)
+            if (query.birthDates is not null && query.birthDates.Any())
             {
                 foreach (var param in query.birthDates)
                 {

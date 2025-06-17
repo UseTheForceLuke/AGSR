@@ -4,7 +4,9 @@ using Application.Patients;
 using Application.Patients.GetByBirthDate;
 using Domain.Patients;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 using SharedKernel;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
 
@@ -15,12 +17,12 @@ namespace Web.Api.Endpoints.Patients
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
             app.MapGet("patients", async (
-                HttpRequest request,
+                [FromQuery] string? date,
                 IQueryHandler<GetByBirthDateQuery, IList<PatientResponse>> handler,
                 CancellationToken cancellationToken) =>
             {
-                // Manually extract dates from query not [FromQuery] TODO: fix that!
-                var dates = request.Query["date"].ToList();
+                var dates = date?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                 ?? Array.Empty<string>();
 
                 var query = new GetByBirthDateQuery(dates);
 

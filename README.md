@@ -1,36 +1,35 @@
-# Clean Architecture Template
+FHIR date search handels timezone, percision up to minutes, for MVP i decided to not support seconds and milisecodns percision.
 
-What's included in the template?
+yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]
 
-- SharedKernel project with common Domain-Driven Design abstractions.
-- Domain layer with sample entities.
-- Application layer with abstractions for:
-  - CQRS
-  - Example use cases
-  - Cross-cutting concerns (logging, validation)
-- Infrastructure layer with:
-  - Authentication
-  - Permission authorization
-  - EF Core, PostgreSQL
-  - Serilog
-- Seq for searching and analyzing structured logs
-  - Seq is available at http://localhost:8081 by default
-- Testing projects
-  - Architecture testing
+unicode + sign in query: %2B
 
-I'm open to hearing your feedback about the template and what you'd like to see in future iterations.
+Some examples:
 
-If you're ready to learn more, check out [**Pragmatic Clean Architecture**](https://www.milanjovanovic.tech/pragmatic-clean-architecture?utm_source=ca-template):
+POST /patients
+where "birthDate":
+2004-07-05T09:39:02.372+05:00 year
+2004-08-05T09:39:02.372+05:00
 
-- Domain-Driven Design
-- Role-based authorization
-- Permission-based authorization
-- Distributed caching with Redis
-- OpenTelemetry
-- Outbox pattern
-- API Versioning
-- Unit testing
-- Functional testing
-- Integration testing
+2004-07-05T10:39:02.372+05:00 month
+2004-07-06T10:39:02.372+05:00
 
-Stay awesome!
+2004-07-05T09:39:02.372+05:00 day
+2004-07-05T10:39:02.372+05:00
+
+2004-07-05T09:39:02.372+05:00 hour
+2004-07-05T09:40:02.372+05:00
+
+2004-07-05T09:39:02.372+05:00 minute
+2004-07-05T09:39:03.372+05:00
+
+GET
+eq
+/patients?date=eq2004-07-05T09:39:02.372%2B05:00
+/patients?date=eq2004 year
+/patients?date=eq2004-07 month
+/patients?date=eq2004-07-05 day
+/patients?date=eq2004-07-05T09%2B05:00 hour
+/patients?date=eq2004-07-05T09:39%2B05:00 minutes
+
+/patients?date=ge2004-07-05T09:39%2B05:00&date=le2004-07-05T09:39%2B05:00
