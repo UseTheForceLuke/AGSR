@@ -11,6 +11,7 @@ namespace FhirSeederCLI
     {
         private static readonly HttpClient client = new HttpClient();
         private static readonly string baseUrl = Environment.GetEnvironmentVariable("WEB_API_URL") + "/patients";
+        private static readonly string env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         private static readonly Random random = new Random();
 
         // Synchronous entry point
@@ -18,7 +19,12 @@ namespace FhirSeederCLI
         {
             try
             {
-                return MainAsync(args).GetAwaiter().GetResult();
+                if (env == "Development")
+                {
+                    return MainAsync(args).GetAwaiter().GetResult();
+                }
+
+                return 0;
             }
             catch (Exception ex)
             {

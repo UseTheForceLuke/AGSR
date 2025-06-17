@@ -70,6 +70,7 @@ services:
         - WEB_API_URL=${WEB_API_URL}
         - WEB_API_HEALTH_URL=${WEB_API_HEALTH_URL}
         - WAIT_TIMEOUT=${WAIT_TIMEOUT}
+        - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
     tty: true
     stdin_open: true
 
