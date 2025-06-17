@@ -11,6 +11,7 @@
         string Gender,
         DateTimeOffset BirthDate,
         TimeSpan? BirthDateOffset,
+        string OriginalBirthDate,
         bool Active,
         DateTime CreatedAt);
 }

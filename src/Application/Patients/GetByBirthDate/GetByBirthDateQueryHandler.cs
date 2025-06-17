@@ -42,6 +42,7 @@ namespace Application.Patients.GetByBirthDate
                     p.Gender.ToString(),
                     p.BirthDate,
                     p.BirthDateOffset,
+                    p.OriginalBirthDate,
                     p.Active,
                     p.CreatedAt));
 

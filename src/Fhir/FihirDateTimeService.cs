@@ -14,7 +14,7 @@ namespace FhirService
         Hour,
         Minute,
         Second,
-        Millisecond // only ap operator is supported come on man who wants miliseconds? :) but if needed can be supported as well
+        Millisecond // only ap operator is supported like come on man who wants miliseconds? :) but if needed can be supported as well
     }
 
     public static class FhirDateTimeParser

@@ -33,6 +33,7 @@ namespace Application.Patients.Create
                 Gender = Enum.Parse<Gender>(command.Gender, ignoreCase: true),
                 BirthDate = result.parsedDate!.Value,
                 BirthDateOffset = result.originalOffset,
+                OriginalBirthDate = command.BirthDate,
                 Active = command.Active,
                 CreatedAt = _dateTimeProvider.UtcNow
             };

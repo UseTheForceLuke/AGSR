@@ -11,6 +11,7 @@ using System.CommandLine.Invocation;
 using System.Linq;
 using System.Collections;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace FhirSeederCLI
 {
@@ -113,13 +114,14 @@ namespace FhirSeederCLI
         public List<string> GivenNames { get; set; }
         public Gender Gender { get; set; }
         public DateTime BirthDate { get; set; } // Changed to DateTime
-        public TimeSpan BirthDateOffset { get; set; } // Added separate offset property
+        public TimeSpan? BirthDateOffset { get; set; } // Added separate offset property
+        public string OriginalBirthDate { get; set; }
         public bool Active { get; set; } = true;
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
         public DateTimeOffset GetBirthDateTimeOffset()
         {
-            return new DateTimeOffset(BirthDate, BirthDateOffset);
+            return new DateTimeOffset(BirthDate, BirthDateOffset.HasValue ? BirthDateOffset.Value : TimeSpan.Zero);
         }
     }
 
@@ -194,6 +196,7 @@ namespace FhirSeederCLI
             using (var db = new NpgsqlConnection(_connectionString))
             {
                 await db.OpenAsync();
+
                 using (var transaction = db.BeginTransaction())
                 {
                     try
@@ -201,10 +204,12 @@ namespace FhirSeederCLI
                         foreach (var patient in patients)
                         {
                             await db.ExecuteAsync(@"
-                        INSERT INTO patients 
-                        (id, name_use, family_name, given_names, gender, birth_date, birth_date_offset, active, created_at)
-                        VALUES 
-                        (@Id, @NameUse, @FamilyName, @GivenNames::jsonb, @Gender, @BirthDate, @BirthDateOffset, @Active, @CreatedAt)",
+                                INSERT INTO patients 
+                                (id, name_use, family_name, given_names, gender, birth_date, 
+                                 birth_date_offset, original_birth_date, active, created_at)
+                                VALUES 
+                                (@Id, @NameUse, @FamilyName, @GivenNames::jsonb, @Gender, @BirthDate, 
+                                 @BirthDateOffset, @OriginalBirthDate::text, @Active, @CreatedAt)",
                                 new
                                 {
                                     patient.Id,
@@ -213,7 +218,8 @@ namespace FhirSeederCLI
                                     GivenNames = JsonHelper.ToJson(patient.GivenNames),
                                     Gender = patient.Gender.ToString(),
                                     patient.BirthDate,
-                                    BirthDateOffset = patient.BirthDateOffset, // Pass TimeSpan directly
+                                    BirthDateOffset = patient.BirthDateOffset,
+                                    OriginalBirthDate = patient.OriginalBirthDate, // Make sure this matches the case
                                     patient.Active,
                                     patient.CreatedAt
                                 },
@@ -235,7 +241,7 @@ namespace FhirSeederCLI
 
     public static class PatientGenerator
     {
-        private static readonly TimeSpan[] TimezoneOffsets = {
+        private static readonly TimeSpan?[] TimezoneOffsets = {
             TimeSpan.Zero, // UTC
             TimeSpan.FromHours(1), TimeSpan.FromHours(2), TimeSpan.FromHours(3),
             TimeSpan.FromHours(3).Add(TimeSpan.FromMinutes(30)), // +03:30
@@ -254,14 +260,15 @@ namespace FhirSeederCLI
             TimeSpan.FromHours(-4), TimeSpan.FromHours(-5), TimeSpan.FromHours(-6),
             TimeSpan.FromHours(-7), TimeSpan.FromHours(-8), TimeSpan.FromHours(-9),
             TimeSpan.FromHours(-9).Add(TimeSpan.FromMinutes(-30)), // -09:30
-            TimeSpan.FromHours(-10), TimeSpan.FromHours(-11), TimeSpan.FromHours(-12)
+            TimeSpan.FromHours(-10), TimeSpan.FromHours(-11), TimeSpan.FromHours(-12),
+            null
         };
 
         public static List<Patient> GeneratePatients(int count)
         {
             var genders = new[] { "male", "female", "other", "unknown" };
 
-            return new Faker<Patient>()
+            var list = new Faker<Patient>()
                 .RuleFor(p => p.NameUse, f => f.PickRandom("official", "usual", "nickname", "anonymous"))
                 .RuleFor(p => p.FamilyName, f => f.Name.LastName())
                 .RuleFor(p => p.GivenNames, f => new List<string> { f.Name.FirstName(), f.Name.FirstName() })
@@ -270,8 +277,33 @@ namespace FhirSeederCLI
                     new DateTime(1900, 1, 1),
                     DateTime.Now.AddYears(-18)))
                 .RuleFor(p => p.BirthDateOffset, f => f.PickRandom(TimezoneOffsets))
+                .RuleFor(p => p.OriginalBirthDate, (f, p) =>
+                {
+                    if (p.BirthDateOffset == null)
+                    {
+                        return p.BirthDate.ToString("yyyy-MM-dd");
+                    }
+
+                    var offset = p.BirthDateOffset.Value;
+                    var dateTimeWithOffset = new DateTimeOffset(p.BirthDate, offset);
+
+                    // For UTC, randomly choose between Z or +00:00
+                    if (offset == TimeSpan.Zero)
+                    {
+                        return f.Random.Bool()
+                            ? dateTimeWithOffset.ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            : dateTimeWithOffset.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
+                    }
+
+                    // For other offsets
+                    var offsetSign = offset < TimeSpan.Zero ? "-" : "+";
+                    var absoluteOffset = offset.Duration();
+                    return $"{dateTimeWithOffset:yyyy-MM-ddTHH:mm:ss}{offsetSign}{absoluteOffset:hh\\:mm}";
+                })
                 .RuleFor(p => p.Active, f => f.Random.Bool(0.9f))
                 .Generate(count);
+
+            return list;
         }
 
         public static string ToFhirDateTime(DateTimeOffset dateTime)
