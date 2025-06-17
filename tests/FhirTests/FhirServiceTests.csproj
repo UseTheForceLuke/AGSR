@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Fhir\FhirService.csproj" />
+    <ProjectReference Include="..\..\src\FhirService\FhirService.csproj" />
   </ItemGroup>
 
 </Project>
