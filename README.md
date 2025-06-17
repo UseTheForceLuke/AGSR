@@ -6,12 +6,12 @@ unicode + sign in query: %2B<br>
 supports "eq", "ne", "gt", "lt", "ge", "le", "sa", "eb", "ap"<br>
 
 how to run: docker-compose up -d --build<br>
-build cli and run to seed or seed via post /patients<br>
+to rerun fhir-seeder-cli - just start a container again with it to seed 100 patients, on a docker-compose up -d --build command it will seed after web-api is healthy, to delete seed execute postgres sql: truncate public.patients /patients<br>
 swagger<br>
 https://localhost:5001/swagger/index.html<br>
 http://localhost:5000/swagger/index.html<br>
 
-Some examples:<br>
+some examples:<br>
 
 POST /patients<br>
 where birthDate:<br>

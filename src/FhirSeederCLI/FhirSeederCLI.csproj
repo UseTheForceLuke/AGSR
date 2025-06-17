@@ -7,20 +7,14 @@
 		<RootNamespace>FhirSeederCLI</RootNamespace>
 		<ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
 		<ImplicitUsings>disable</ImplicitUsings>
+		<!-- Remove Nullable enable since we're not using C# 8.0 nullable features -->
+		<GenerateProgramFile>false</GenerateProgramFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- Database -->
-		<PackageReference Include="Dapper" Version="2.1.66" />
-		<PackageReference Include="Npgsql" Version="4.0.17" />
-		<!-- 3.1 compatible version -->
-
-		<!-- Data Generation -->
-		<PackageReference Include="Bogus" Version="35.6.3" />
-
-		<!-- CLI Support -->
-		<PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
-		<PackageReference Include="Polly" Version="7.2.3" />
+	  <Compile Remove="NewFolder\**" />
+	  <EmbeddedResource Remove="NewFolder\**" />
+	  <None Remove="NewFolder\**" />
 	</ItemGroup>
 
 </Project>

@@ -2,6 +2,8 @@ services:
   web-api:
     image: ${DOCKER_REGISTRY-}webapi
     container_name: web-api
+    networks:
+      - agsr-network
     build:
       context: .
       dockerfile: src/Web.Api/Dockerfile
@@ -9,22 +11,28 @@ services:
       - 5000:8080
       - 5001:8081
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=http://+:${WEB_API_PORT};https://+:${WEB_API_PORT_HTTPS}
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 10s
 
   postgres:
     image: postgres:17
     container_name: postgres
     environment:
-      - POSTGRES_DB=postgres-agsr-db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./.containers/db:/var/lib/postgresql/data
     ports:
@@ -42,3 +50,29 @@ services:
       - ACCEPT_EULA=Y
     ports:
       - 8081:80
+
+  fhir-seeder-cli:
+    container_name: fhir-seeder-cli
+    networks:
+      - agsr-network
+    build:
+     context: .
+     dockerfile: src/FhirSeederCLI/Dockerfile
+    depends_on:
+     postgres:
+        condition: service_healthy
+     web-api:
+        condition: service_started  # Changed from service_healthy
+    environment:
+        - WAIT_FOR_API=${WAIT_FOR_API}
+        - MAX_RETRIES=${MAX_RETRIES}
+        - RETRY_INTERVAL=${RETRY_INTERVAL}
+        - WEB_API_URL=${WEB_API_URL}
+        - WEB_API_HEALTH_URL=${WEB_API_HEALTH_URL}
+        - WAIT_TIMEOUT=${WAIT_TIMEOUT}
+    tty: true
+    stdin_open: true
+
+networks:
+  agsr-network:
+    driver: bridge

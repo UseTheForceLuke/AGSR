@@ -1,0 +1,24 @@
+{
+  "profiles": {
+    "Docker": {
+      "commandName": "Docker",
+      "environmentVariables": {
+        "WEB_API_URL": "http://web-api:8080",
+        "WEB_API_HEALTH_URL": "http://web-api:8080/health",
+        "WAIT_FOR_API": "true",
+        "WAIT_TIMEOUT": "300",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "LocalDebug": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "WEB_API_URL": "http://localhost:5000",
+        "WEB_API_HEALTH_URL": "http://localhost:5000/health",
+        "WAIT_FOR_API": "true",
+        "WAIT_TIMEOUT": "30",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

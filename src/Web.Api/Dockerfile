@@ -3,6 +3,7 @@
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 USER $APP_UID
+RUN apt-get update && apt-get install -y curl
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081

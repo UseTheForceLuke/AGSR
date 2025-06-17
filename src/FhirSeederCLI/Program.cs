@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -9,45 +10,65 @@ namespace FhirSeederCLI
     class Program
     {
         private static readonly HttpClient client = new HttpClient();
-        private static readonly string baseUrl = "http://localhost:5000/patients";
-        private static readonly string healthUrl = "http://localhost:5000/health";
+        private static readonly string baseUrl = Environment.GetEnvironmentVariable("WEB_API_URL") + "/patients";
         private static readonly Random random = new Random();
 
-        static async Task Main(string[] args)
-        {
-            Console.WriteLine("FHIR Patient Data Generator - Hour-Based Timezone Offsets");
-            Console.WriteLine("--------------------------------------------------------");
-
-            // Check API health
-            if (!await CheckApiHealth())
-            {
-                Console.WriteLine("API is not healthy. Exiting.");
-                return;
-            }
-
-            await GenerateAndPostTestPatients(100);
-
-            Console.WriteLine("\nData generation complete. Press any key to exit.");
-            Console.ReadKey();
-        }
-
-        private static async Task<bool> CheckApiHealth()
+        // Synchronous entry point
+        public static int Main(string[] args)
         {
             try
             {
-                var response = await client.GetAsync(healthUrl);
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    return content.Contains("\"status\":\"Healthy\"");
-                }
-                return false;
+                return MainAsync(args).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Health check failed: {ex.Message}");
-                return false;
+                Console.Error.WriteLine($"Fatal error: {ex}");
+                return 1;
             }
+        }
+
+        // Async main logic
+        public static async Task<int> MainAsync(string[] args)
+        {
+            if (Environment.GetEnvironmentVariable("WAIT_FOR_API") == "true")
+            {
+                var healthUrl = Environment.GetEnvironmentVariable("WEB_API_HEALTH_URL");
+                var maxRetries = int.Parse(Environment.GetEnvironmentVariable("MAX_RETRIES") ?? "10", CultureInfo.InvariantCulture);
+                var retryInterval = int.Parse(Environment.GetEnvironmentVariable("RETRY_INTERVAL") ?? "5", CultureInfo.InvariantCulture);
+
+                if (!await WaitForApi(healthUrl, maxRetries, retryInterval))
+                {
+                    Console.WriteLine("API did not become healthy in time");
+                    return 1;
+                }
+            }
+
+            Console.WriteLine("FHIR Patient Data Generator");
+
+            await GenerateAndPostTestPatients(100);
+            Console.WriteLine("Data generation complete.");
+            return 0;
+        }
+
+        private static async Task<bool> WaitForApi(string healthUrl, int maxRetries, int retryInterval)
+        {
+            var retryCount = 0;
+            while (retryCount < maxRetries)
+            {
+                try
+                {
+                    var response = await client.GetAsync(healthUrl);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                }
+                catch { }
+
+                retryCount++;
+                await Task.Delay(retryInterval * 1000);
+            }
+            return false;
         }
 
         private static async Task GenerateAndPostTestPatients(int count)
