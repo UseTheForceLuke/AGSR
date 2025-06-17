@@ -1,5 +1,4 @@
 ﻿using Application.Abstractions.Messaging;
-using Domain.Patients;
 
 namespace Application.Patients.GetByBirthDate
 {

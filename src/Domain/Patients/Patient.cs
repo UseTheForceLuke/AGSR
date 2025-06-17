@@ -16,7 +16,7 @@ namespace Domain.Patients
         public TimeSpan? BirthDateOffset { get; set; }
         public string OriginalBirthDate { get; set; }
 
-        public bool Active { get; set; } = true;
+        public bool Active { get; set; }
         public DateTime CreatedAt { get; set; }
 
     }

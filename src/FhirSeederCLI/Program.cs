@@ -10,6 +10,7 @@ namespace FhirSeederCLI
     {
         private static readonly HttpClient client = new HttpClient();
         private static readonly string baseUrl = "http://localhost:5000/patients";
+        private static readonly string healthUrl = "http://localhost:5000/health";
         private static readonly Random random = new Random();
 
         static async Task Main(string[] args)
@@ -17,10 +18,36 @@ namespace FhirSeederCLI
             Console.WriteLine("FHIR Patient Data Generator - Hour-Based Timezone Offsets");
             Console.WriteLine("--------------------------------------------------------");
 
+            // Check API health
+            if (!await CheckApiHealth())
+            {
+                Console.WriteLine("API is not healthy. Exiting.");
+                return;
+            }
+
             await GenerateAndPostTestPatients(100);
 
             Console.WriteLine("\nData generation complete. Press any key to exit.");
             Console.ReadKey();
+        }
+
+        private static async Task<bool> CheckApiHealth()
+        {
+            try
+            {
+                var response = await client.GetAsync(healthUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    return content.Contains("\"status\":\"Healthy\"");
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Health check failed: {ex.Message}");
+                return false;
+            }
         }
 
         private static async Task GenerateAndPostTestPatients(int count)

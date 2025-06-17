@@ -13,7 +13,7 @@ namespace Web.Api.Endpoints.Patients
     {
         public void MapEndpoint(IEndpointRouteBuilder app)
         {
-            app.MapGet("patients/{id}", async (
+            app.MapGet("patients/{id:guid}", async (
                 Guid id,
                 IQueryHandler<GetPatientByIdQuery, PatientResponse> handler,
                 CancellationToken cancellationToken) =>

@@ -1,8 +1,6 @@
 ﻿using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
-using Application.Users.GetByEmail;
 using Domain.Patients;
-using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
