@@ -13,7 +13,7 @@ run<br>
 dotnet dev-certs https -ep "$env:APPDATA\ASP.NET\Https\Web.Api.pfx" -p "your_password"
 then run<br>
 dotnet user-secrets set "Kestrel:Certificates:Development:Password" "your_password"<br>
-2)<br>
+2) <br>
 Go to VS and run web-api with Docker lauch profile, VS will create a cert, agree to what VS asks.<br>
 Then delete created container by VS in docker. Also ports 5000 and 5001 might be not available on you machine, so release them.<br>
 
