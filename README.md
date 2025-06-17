@@ -14,7 +14,7 @@ http://localhost:5000/swagger/index.html<br>
 Some examples:<br>
 
 POST /patients<br>
-where "birthDate":<br>
+where birthDate:<br>
 2004-07-05T09:39:02.372+05:00 year<br>
 2004-08-05T09:39:02.372+05:00<br>
 <br>
@@ -43,3 +43,9 @@ ge<br>
 le<br>
 /patients?date=ge2004-07-05T09:39%2B05:00&date=le2004-07-05T09:39%2B05:00<br>
 
+Timezone adjsut example we get next day:<br>
+POST /patients where birthDate 2004-07-05T10:40:05.373+14:00<br>
+GET/patients/b95018d0-080a-4dc3-ac1a-cbc3bf1355c7<br>
+        "birthDate": "2004-07-04T20:40:05.373+00:00",<br>
+        "birthDateOffset": "14:00:00",<br>
+        "originalBirthDate": "2004-07-05T10:40:05.373+14:00",<br>
