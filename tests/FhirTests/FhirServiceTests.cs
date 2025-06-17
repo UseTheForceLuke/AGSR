@@ -1,4 +1,5 @@
 using FhirService;
+using FhirService.Models;
 
 namespace FhirServiceTests
 {

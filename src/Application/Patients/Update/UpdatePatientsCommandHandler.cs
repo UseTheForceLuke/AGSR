@@ -3,6 +3,7 @@ using Application.Abstractions.Messaging;
 using Application.Patients.Update;
 using Domain.Patients;
 using FhirService;
+using FhirService.Models;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
