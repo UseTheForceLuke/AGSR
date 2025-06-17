@@ -6,7 +6,10 @@ yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]<br><br>
 unicode + sign in query: %2B<br>
 supports "eq", "ne", "gt", "lt", "ge", "le", "sa", "eb", "ap"<br><br>
 
-**How to run**: go to web-api folder and run dotnet dev-certs https -ep "$env:APPDATA\ASP.NET\Https\Web.Api.pfx" -p "YourSecurePassword" then go to root folder and run docker-compose up -d --build<br>
+**How to run**:
+Generate certificate: go to VS and run web-api via Docker profile - VS will create a cert.<br>
+Then delete created container by VS in docker. Also ports 5000 and 5001 might be not available on you machine - so release them.<br>
+Then go to root folder and run docker-compose up -d --build<br>
 to rerun(seed more) fhir-seeder-cli - just start a container again - it will seed 100 patients<br><br>
 
 swagger<br>
