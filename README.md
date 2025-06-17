@@ -1,4 +1,4 @@
-FHIR date search handels timezone, percision up to minutes, for MVP i decided to not support seconds and milisecodns percision.<br>
+FHIR date search handels timezone, percision up to minutes, for MVP i decided to not support seconds hence milisecodns range percision.<br>
 
 yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]<br>
 
