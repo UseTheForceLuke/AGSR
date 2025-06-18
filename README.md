@@ -6,7 +6,7 @@ A robust FHIR-compliant API for handling date searches with timezone support and
 
 - **Timezone-aware** date handling
 - **Precision support** up to minutes (seconds and milliseconds excluded for MVP)
-- Supports **multiple operators**: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`
+- Supports **multiple operators**: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap` (UPD: ap is not supported on API lvl forgot to add it, but it works in FhirService tests)
 - The API accepts dates in the following ISO 8601 format: yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm] Most implementations use millisecond precision (3 digits) for practical reasons, this one is no exception. But can be improved if needed.
 
 ## How to run
