@@ -34,7 +34,7 @@ year precision will get anything within a year- eq2004<br>
 month precision will get anything within a month eq2004-07<br>
 day precision will get anything within a day - eq-2004-07-05 day<br>
 hour precision will get anything within an hour - eq2004-07-05T09<br>
-hour precision will get anything within minute - eq2004-07-05T09L39 minute<br>
+hour precision will get anything within minute - eq2004-07-05T09:39 minute<br>
 
 **POST**<br>
 1920  -><br>
