@@ -60,9 +60,9 @@ services:
      context: .
      dockerfile: src/FhirSeederCLI/Dockerfile
     depends_on:
-     postgres:
+      postgres:
         condition: service_healthy
-     web-api:
+      web-api:
         condition: service_started  # Changed from service_healthy
     environment:
         - WAIT_FOR_API=${WAIT_FOR_API}
