@@ -35,6 +35,7 @@ month precision will get anything within a month - eq2004-07<br>
 day precision will get anything within a day - eq-2004-07-05<br>
 hour precision will get anything within an hour - eq2004-07-05T09<br>
 hour precision will get anything within minute - eq2004-07-05T09:39<br>
+also time zone can be used but starting from hour precision: eq2004-07-05T09%2B05:00
 
 **POST**<br>
 1920  -><br>
