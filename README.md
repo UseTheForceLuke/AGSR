@@ -37,35 +37,35 @@ hour precision will get anything within an hour - eq2004-07-05T09<br>
 hour precision will get anything within minute - eq2004-07-05T09L39 minute<br>
 
 **POST**<br>
-1920  ->
-"birthDate": "1920-01-01T00:00:00+00:00",
-"birthDateOffset": null,
-"originalBirthDate": "1920"
-1920-01 ->
-"birthDate": "1920-01-01T00:00:00+00:00",
-"birthDateOffset": null,
-"originalBirthDate": "1920-01",
-1920-01-01 ->
-"birthDate": "1920-01-01T00:00:00+00:00",
-"birthDateOffset": null,
-"originalBirthDate": "1920-01-01",
-...
-1920-01-01T10
-1920-01-01T10:10
-1920-01-01T10:10:10
-
-1920-01-01T10+03:00->
-"birthDate": "1920-01-01T07:00:00+00:00",
-"birthDateOffset": "03:00:00",
-"originalBirthDate": "1920-01-01T10+03:00",
-1920-01-01T10:10:10Z ->
-"birthDate": "1920-01-01T10:10:10+00:00",
-"birthDateOffset": "00:00:00",
-"originalBirthDate": "1920-01-01T10:10:10Z",
-1920-01-01T10:10:10+00:00 ->
-"birthDate": "1920-01-01T10:10:10+00:00",
-"birthDateOffset": "00:00:00",
-"originalBirthDate": "1920-01-01T10:10:10+00:00",
+1920  -><br>
+"birthDate": "1920-01-01T00:00:00+00:00",<br>
+"birthDateOffset": null,<br>
+"originalBirthDate": "1920"<br>
+1920-01 -><br>
+"birthDate": "1920-01-01T00:00:00+00:00",<br>
+"birthDateOffset": null,<br>
+"originalBirthDate": "1920-01",<br>
+1920-01-01 -><br>
+"birthDate": "1920-01-01T00:00:00+00:00",<br>
+"birthDateOffset": null,<br>
+"originalBirthDate": "1920-01-01",<br>
+...<br>
+1920-01-01T10<br>
+1920-01-01T10:10<br>
+1920-01-01T10:10:10<br>
+<br>
+1920-01-01T10+03:00-><br>
+"birthDate": "1920-01-01T07:00:00+00:00",<br>
+"birthDateOffset": "03:00:00",<br>
+"originalBirthDate": "1920-01-01T10+03:00",<br>
+1920-01-01T10:10:10Z -><br>
+"birthDate": "1920-01-01T10:10:10+00:00",<br>
+"birthDateOffset": "00:00:00",<br>
+"originalBirthDate": "1920-01-01T10:10:10Z",<br>
+1920-01-01T10:10:10+00:00 -><br>
+"birthDate": "1920-01-01T10:10:10+00:00",<br>
+"birthDateOffset": "00:00:00",<br>
+"originalBirthDate": "1920-01-01T10:10:10+00:00",<br>
 
 **GET**<br>
 **eq**<br>
