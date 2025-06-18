@@ -1,12 +1,15 @@
-FHIR date search handels timezone, percision up to minutes, for MVP i decided to not support seconds hence milisecodns range percision.<br>
-https://drive.google.com/file/d/1NB9T5awDSK_Bygole8jcD9NfIBupZlCc/view<br><br>
+# FHIR Date Search API
 
-yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]<br><br>
+A robust FHIR-compliant API for handling date searches with timezone support and precision up to minutes.
 
-unicode + sign in query: %2B<br>
-supports "eq", "ne", "gt", "lt", "ge", "le", "sa", "eb", "ap"<br><br>
+## Features
 
-**How to run**:<br>
+- **Timezone-aware** date handling
+- **Precision support** up to minutes (seconds and milliseconds excluded for MVP)
+- Supports **multiple operators**: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`
+- The API accepts dates in the following ISO 8601 format: yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]
+
+## How to run
 There are 2 ways to generate SSL certificate:<br>
 1) go to web-api root folder<br>
 run PS from admin then run<br>
@@ -20,13 +23,13 @@ Then delete created container by VS in docker. Also ports 5000 and 5001 might be
 Then go to root folder and run docker-compose up -d --build<br>
 to rerun(seed more) fhir-seeder-cli - just start a container again - it will seed 100 patients<br><br>
 
+**Unicode support** in queries use unicode for plus sign (`+` as `%2B`)
+  
 swagger<br>
 https://localhost:5001/swagger/index.html<br>
 http://localhost:5000/swagger/index.html<br>
 
-**Some examples regarding precisions**:<br>
-
-
+## Some examples regarding precisions
 year precision will get anything within a year- eq2004<br>
 month precision will get anything within a month eq2004-07<br>
 day precision will get anything within a day - eq-2004-07-05 day<br>
