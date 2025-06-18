@@ -7,7 +7,7 @@ A robust FHIR-compliant API for handling date searches with timezone support and
 - **Timezone-aware** date handling
 - **Precision support** up to minutes (seconds and milliseconds excluded for MVP)
 - Supports **multiple operators**: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`
-- The API accepts dates in the following ISO 8601 format: yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm]
+- The API accepts dates in the following ISO 8601 format: yyyy-mm-ddThh:mm:ss.ssss[Z|(+|-)hh:mm] Most implementations use millisecond precision (3 digits) for practical reasons, this one is no exception. But can be improved if needed.
 
 ## How to run
 There are 2 ways to generate SSL certificate:<br>
